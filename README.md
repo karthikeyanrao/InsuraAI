@@ -3,6 +3,75 @@
 ## Overview
 InsuraAI is a modern, AI-powered insurance claim management frontend built with React. It provides a seamless, user-friendly interface for users to submit, track, and manage insurance claims online. The application is designed for clarity, speed, and ease of use, leveraging automation and cloud technologies to deliver a next-generation insurance experience.
 
+## 🏦 Project Overview
+
+InsuraAI+ is a serverless, AI-driven insurance claim validator built using AWS. It automates claim ingestion, OCR extraction, summarization, risk scoring, and notifications using modern AWS services like Lambda, Bedrock, Textract, EventBridge, and Step Functions.
+
+---
+
+## ✨ Workflow Summary
+
+1. **User uploads claim document via frontend**
+2. **Textract Lambda** extracts raw text from the file
+3. **Bedrock Lambda** summarizes and classifies claim risk
+4. **Data stored** in two DynamoDB tables (`InsuraAIClaims`, `ClaimSummaries`)
+5. **EventBridge & SNS** trigger notifications if claim is high risk
+
+---
+
+## ⚖️ AWS Lambda Functions
+
+### 1. `textractOCRHandler`
+
+- **Trigger:** Start of Step Function
+- **Job:** Uses Textract to extract text from uploaded claim PDF/image
+- **Output:** `{ claimID, text, filename, uploadedBy, timestamp }`
+
+### 2. `bedrockSummaryHandler`
+
+- **Trigger:** StepFunction (after OCR)
+- **Job:**
+  - Extracts patient name, reason, policy value
+  - Fetches `PolicyID` from `InsuraAIClaims` table using claimID
+  - Summarizes claim using Amazon Titan (Bedrock)
+  - Classifies risk level
+  - Writes data to `ClaimSummaries`
+  - Sends event to EventBridge (if risk = HIGH)
+
+### 3. `notifyHighRiskClaim` (via EventBridge + SNS)
+
+- **Trigger:** EventBridge rule
+- **Job:** Sends notification email to subscriber via SNS
+
+---
+
+## 📅 DynamoDB Tables
+
+### 1. `InsuraAIClaims`
+
+- Stores metadata of uploaded claims (via UploadHandler Lambda)
+- Primary Key: `ClaimID`
+- Referenced in Bedrock Lambda to fetch `PolicyID`
+
+### 2. `ClaimSummaries`
+
+- Stores summary, extracted metadata, risk level
+- Primary Key: `claimID`
+- Used by frontend dashboard to show claim info
+
+---
+
+## ♻️ AWS Step Functions
+
+```mermaid
+stateDiagram-v2
+    [*] --> OCR Textract
+    OCR Textract --> Claude Summarize
+    Claude Summarize --> Risk Check
+    Risk Check --> Notify Claimant: if LOW/MEDIUM
+    Risk Check --> Send To EventBridge: if HIGH
+    Send To EventBridge --> Notify Claimant
+
 ## What is Done in the Frontend?
 - **Claim Submission:** Users can upload claim documents (PDF, JPEG, PNG) with drag-and-drop or file selection, and provide required details (Policy ID, User ID).
 - **AI-Powered Processing:** After upload, claims are automatically processed by an AI backend, extracting details and updating claim status.
