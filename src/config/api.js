@@ -1,7 +1,7 @@
 // API Configuration
 export const API_CONFIG = {
   // Your actual AWS API Gateway URL with /prod stage
-  BASE_URL: 'https://ibkq2tzy21.execute-api.ap-south-1.amazonaws.com/prod/',
+  BASE_URL: 'ENTER_API_KEY',
   
   // API endpoints
   ENDPOINTS: {
